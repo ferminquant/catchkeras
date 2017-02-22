@@ -153,7 +153,7 @@ if __name__ == "__main__":
         while not game_over:
             input_tm1 = input_t
             # get next action
-            if np.random.rand() <= (epsilon - (((win_cnt/2)/epoch)*epsilon)):
+            if np.random.rand() <= (epsilon + (((win_cnt/2)/epoch)*epsilon)):
                 action = np.random.randint(0, num_actions, size=1)
             else:
                 q = model.predict(input_tm1)
