@@ -115,7 +115,7 @@ if __name__ == "__main__":
     epsilon = .1  # exploration
     num_actions = 3  # [move_left, stay, move_right]
     epoch = 1000
-    max_memory = 500#500
+    max_memory = 5000#500
     hidden_size = 100#100
     batch_size = 50#50
     grid_size = 50
