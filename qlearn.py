@@ -153,7 +153,7 @@ if __name__ == "__main__":
         while not game_over:
             input_tm1 = input_t
             # get next action
-            if np.random.rand() <= (epsilon + (((win_cnt/2)/epoch)*epsilon)):
+            if np.random.rand() <= (epsilon - (((win_cnt/2)/epoch)*epsilon)*0.5 ):
                 action = np.random.randint(0, num_actions, size=1)
             else:
                 q = model.predict(input_tm1)
@@ -180,7 +180,7 @@ if __name__ == "__main__":
             del loss_avg[0]
         loss_avg_val = sum(loss_avg)/len(loss_avg)
         if (e+1) % 100 == 0:
-            print("Epoch {:03d}/{:03d} | L {:.4f} | Win {} | MaxLL {} | Lavg {:.6f} | T {:.2f}".format((e+1), epoch, loss, win_cnt, max_last_loss, loss_avg_val, (time.time()-start_time)/60/60)) #hours
+            print("Epoch {:04d}/{:04d} | L {:.4f} | Win {:03d} | MaxLL {:02d} | Lavg {:.6f} | T {:.2f}".format((e+1), epoch, loss, win_cnt, max_last_loss, loss_avg_val, (time.time()-start_time)/60/60)) #hours
         prev_win_cnt = win_cnt	
 
     # Save trained model weights and architecture, this will be used by the visualization code
