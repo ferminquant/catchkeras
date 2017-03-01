@@ -1,0 +1,22 @@
+array 3x3 = 9, es un estado
+
+las actiones son varias, entonces esta en una NN, entrenada de juegos previos. Lo que da es para cada estado, la probabilidad de cada accion de terminar en ganar. 
+  entonces tenes un estado, calculas con esta NN las tres mejores opciones, luego las tres mejores opciones de sus hijos y nietos y n niveles. Y tomas la mejor opcion. Supongo que seria algo asi como la suma ponderada de todos los niveles revisados.
+    Pero como la entrenas para todos los movimientos? Como maximo, solo pueden existir 9 acciones, cuando el tablero esta vacio, entonces 9 output nodes. Tambien son 9 input nodes. 
+	  Esta NN se entrena con RL, con reward y action. La evaluacion, tiene que considerar si la accion a tomar es valida, o sea que no esta ocupada la celda.
+
+la segunda NN es para saber quien va ganando. Dado un estado, quien gano al final. Se entrenaria al final de cada juego.   
+
+Seria de ponerla a jugar contra ella misma. Primero contra una NN no entrenada, que seria la v0. Cuando le gane 80% de las veces, seria v1, y asi, cada version seria como un nivel en el juego. 
+
+012
+345
+678
+
+				q = model.predict(input_tm1)[0]
+				while not valid_action:
+					action = np.argmax(q)
+					if input_tm1[action] == -1:
+						valid_action = True
+					else:
+						del q[action]

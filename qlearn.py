@@ -180,7 +180,7 @@ if __name__ == "__main__":
             del loss_avg[0]
         loss_avg_val = sum(loss_avg)/len(loss_avg)
         if (e+1) % 100 == 0:
-            print("Epoch {:04d}/{:04d} | L {:.4f} | Win {:03d} | MaxLL {:02d} | Lavg {:.6f} | T {:.2f}".format((e+1), epoch, loss, win_cnt, max_last_loss, loss_avg_val, (time.time()-start_time)/60/60)) #hours
+            print("Epoch {:04d}/{:04d} | L {:.4f} | Win {:03d} | MaxLL {:03d} | Lavg {:.6f} | T {:.2f}".format((e+1), epoch, loss, win_cnt, max_last_loss, loss_avg_val, (time.time()-start_time)/60/60)) #hours
         prev_win_cnt = win_cnt	
 
     # Save trained model weights and architecture, this will be used by the visualization code
