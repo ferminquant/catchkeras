@@ -1,11 +1,11 @@
 import json
 import numpy as np
 import time
-from keras.model import Sequential
+from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.optimizers import sgd
 
-class TTT(object)
+class TTT(object):
 	def __init__(self):
 		self.reset()
 	
@@ -13,12 +13,12 @@ class TTT(object)
 		self.state = np.zeros((9))-1
 	
 	def observe(self):
-		return self.state
+		return self.state[np.newaxis]
 	
 	def act(self,action,opponent):
 		self.state[action] = 1
-		not_a_draw, game_over = self.is_over()
-		if not_a_draw;
+		not_a_draw, game_over = self._is_over()
+		if not_a_draw:
 			#I won
 			return self.observe(), 1, game_over
 		elif game_over:
@@ -27,48 +27,54 @@ class TTT(object)
 		else:
 			#I did not win, and it is the opponent's turn
 			valid_action = False
-			q = opponent.predict(self.state)[0]
-			while not valid_action;
-				action2 = np.argmax{q}
+			q = opponent.predict(self.observe())[0]
+			ql = list()
+			for i in range(0,len(q)):
+				ql.append([i,q[i]])
+			ql = sorted(ql,reverse=True,key=lambda tuz: tuz[1])
+			tmp_idx = 0;
+			while not valid_action:
+				action2 = ql[tmp_idx][0]
 				if self.state[action2] == -1:
 					valid_action = True
 				else:
-					del q[action2]
-			self.state[action] = 0
-			not_a_draw, game_over = self.is_over()
-			if not_a_draw;
+					tmp_idx = tmp_idx + 1
+			self.state[action2] = 0
+			not_a_draw, game_over = self._is_over()
+			if not_a_draw:
 				#I lost
 				return self.observe(), -2, game_over
 			elif game_over:
 				#it was a draw
-				return self.observe(), -1, False
+				return self.observe(), -1, game_over
 			else:
 				#the game continues
-				return self.observe(), 0, False
+				return self.observe(), 0, game_over
 		
 	
 	def _is_over(self):
-		if self.state[0] == self.state[1] and self.state[0] == self.state[2]:
+		if self.state[0] == self.state[1] and self.state[0] == self.state[2] and self.state[0] != -1:
 			not_a_draw = True
-		elif self.state[3] == self.state[4] and self.state[3] == self.state[5]:
+		elif self.state[3] == self.state[4] and self.state[3] == self.state[5] and self.state[3] != -1:
 			not_a_draw =  True
-		elif self.state[6] == self.state[7] and self.state[6] == self.state[8]:
+		elif self.state[6] == self.state[7] and self.state[6] == self.state[8] and self.state[6] != -1:
 			not_a_draw =  True
-		elif self.state[0] == self.state[3] and self.state[0] == self.state[6]:
+		elif self.state[0] == self.state[3] and self.state[0] == self.state[6] and self.state[0] != -1:
 			not_a_draw =  True
-		elif self.state[1] == self.state[4] and self.state[1] == self.state[7]:
+		elif self.state[1] == self.state[4] and self.state[1] == self.state[7] and self.state[1] != -1:
 			not_a_draw =  True
-		elif self.state[2] == self.state[5] and self.state[2] == self.state[8]:
+		elif self.state[2] == self.state[5] and self.state[2] == self.state[8] and self.state[2] != -1:
 			not_a_draw =  True
-		elif self.state[0] == self.state[4] and self.state[0] == self.state[8]:
+		elif self.state[0] == self.state[4] and self.state[0] == self.state[8] and self.state[0] != -1:
 			not_a_draw =  True
-		elif self.state[2] == self.state[4] and self.state[2] == self.state[6]:
+		elif self.state[2] == self.state[4] and self.state[2] == self.state[6] and self.state[2] != -1:
 			not_a_draw =  True
-		not_a_draw =  False
+		else:
+			not_a_draw =  False
 		if not_a_draw:
 			game_over = True
 		else:
-			game_over = -1 in self.state
+			game_over = not(-1 in self.state)
 		return not_a_draw, game_over
 
 class ExpRep(object):
@@ -99,11 +105,14 @@ class ExpRep(object):
 			else:
 				targets[i, action_t] = reward_t + self.discount * Q_sa
 		return inputs, targets
+	
+	def get_memory(self):
+		return self.memory
 
 if __name__ == "__main__":
 	epsilon = 0.1
 	num_actions = 9
-	epoch = 5
+	epoch = 1000
 	max_memory = 500
 	batch_size = 50
 	hidden_size = 90
@@ -115,12 +124,12 @@ if __name__ == "__main__":
 	model.compile(sgd(lr=.2), "mse")
 	
 	#save v0 model, run only first time ever
-	model.save_weights("TTTModel_v0.h5", overwrite=True)
-	with open("TTTModel_v0.json", "w") as outfile:
-		json.dump(model.to_json(), outfile)
+	#model.save_weights("TTTModel_v0.h5", overwrite=True)
+	#with open("TTTModel_v0.json", "w") as outfile:
+	#	json.dump(model.to_json(), outfile)
 	
-	# to continue from a previous model 
-	# model.load_weight("TTTModel.h5")
+	#to continue training from a previous model 
+	model.load_weights("TTTModel_v4.h5")
 	
 	#load opponent
 	opponent = Sequential()
@@ -128,10 +137,13 @@ if __name__ == "__main__":
 	opponent.add(Dense(hidden_size, activation='relu'))
 	opponent.add(Dense(num_actions))
 	opponent.compile(sgd(lr=.2), "mse")
-	opponent.load_weight("TTTModel_v0.h5")
+	opponent.load_weights("TTTModel_v3.h5")
 	
 	env = TTT()
 	exp_rep = ExpRep(max_memory=max_memory)
+	win_cnt = 0
+	draw_cnt = 0
+	lose_cnt = 0
 	
 	for e in range(epoch):
 		loss = 0.
@@ -145,16 +157,21 @@ if __name__ == "__main__":
 			if np.random.rand() <= epsilon:
 				while not valid_action:
 					action = np.random.randint(0, num_actions, size=1)
-					if input_tm1[action] == -1:
+					if input_tm1[0][action] == -1:
 						valid_action = True
 			else:
 				q = model.predict(input_tm1)[0]
+				ql = list()
+				for i in range(0,len(q)):
+					ql.append([i,q[i]])
+				ql = sorted(ql,reverse=True,key=lambda tuz: tuz[1])
+				tmp_idx = 0;
 				while not valid_action:
-					action = np.argmax(q)
-					if input_tm1[action] == -1:
+					action = ql[tmp_idx][0]
+					if input_tm1[0][action] == -1:
 						valid_action = True
 					else:
-						del q[action]
+						tmp_idx = tmp_idx + 1
 			
 			#make a move
 			input_t, reward, game_over = env.act(action, opponent)
@@ -174,9 +191,17 @@ if __name__ == "__main__":
 			#train neural network on previous experiences
 			loss += model.train_on_batch(inputs, targets)
 			
-			print("{:02d}/{:02d} |{:02d}|{:02d}|{:02d}| {:.4f}".format(e,epoch,win_cnt,draw_cnt,lose_cnt,loss))
+		if (e+1) % 100 == 0:
+			print("{:04d}/{:04d} |{:03d}|{:03d}|{:03d}| {:.6f}".format(e+1,epoch,win_cnt,draw_cnt,lose_cnt,loss))
+			
+		#tuz = env.observe()[0]
+		#print("{:02d}|{:02d}|{:02d}".format(int(tuz[0]),int(tuz[1]),int(tuz[2])))
+		#print("{:02d}|{:02d}|{:02d}".format(int(tuz[3]),int(tuz[4]),int(tuz[5])))
+		#print("{:02d}|{:02d}|{:02d}".format(int(tuz[6]),int(tuz[7]),int(tuz[8])))
+		#print("")
+			
 	
 	#save model
-	model.save_weights("TTTModel.h5", overwrite=True)
-	with open("TTTModel.json", "w") as outfile:
+	model.save_weights("TTTModel_v4.h5", overwrite=True)
+	with open("TTTModel_v4.json", "w") as outfile:
 		json.dump(model.to_json(), outfile)
