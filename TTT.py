@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import time
+import os.path
 from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.optimizers import sgd
@@ -116,6 +117,22 @@ if __name__ == "__main__":
 	max_memory = 500
 	batch_size = 50
 	hidden_size = 90
+		
+	opponent_version = 0
+	found_last_version = False
+	while not found_last_version:
+		opponent_name = "TTTModel_v{}".format(opponent_version)
+		if os.path.isfile("{}.h5".format(opponent_name)):
+			opponent_version = opponent_version + 1
+		else:
+			found_last_version= True
+			if opponent_version <= 1:
+				opponent_version = opponent_version - 1
+			else:
+				#in case the last version is not complete
+				opponent_version = opponent_version - 2
+			
+	model_version = opponent_version + 1
 	
 	model = Sequential()
 	model.add(Dense(hidden_size, input_shape=(num_actions,), activation='relu'))
@@ -123,85 +140,101 @@ if __name__ == "__main__":
 	model.add(Dense(num_actions))
 	model.compile(sgd(lr=.2), "mse")
 	
-	#save v0 model, run only first time ever
+	#save v0 model, run only first time ever, it is suppossed to be a new untrained model
 	#model.save_weights("TTTModel_v0.h5", overwrite=True)
 	#with open("TTTModel_v0.json", "w") as outfile:
 	#	json.dump(model.to_json(), outfile)
 	
-	#to continue training from a previous model 
-	model.load_weights("TTTModel_v4.h5")
-	
-	#load opponent
+	#opponent model
 	opponent = Sequential()
 	opponent.add(Dense(hidden_size, input_shape=(num_actions,), activation='relu'))
 	opponent.add(Dense(hidden_size, activation='relu'))
 	opponent.add(Dense(num_actions))
 	opponent.compile(sgd(lr=.2), "mse")
-	opponent.load_weights("TTTModel_v3.h5")
 	
-	env = TTT()
-	exp_rep = ExpRep(max_memory=max_memory)
-	win_cnt = 0
-	draw_cnt = 0
-	lose_cnt = 0
+	#self improvement loop
+	win_rate = 0.0
+	cnt = 1
+	while True:#model_version <= 2:
+		if win_rate >= 0.90:
+			opponent_version = opponent_version + 1
+			model_version = opponent_version + 1
 	
-	for e in range(epoch):
-		loss = 0.
-		env.reset()
-		game_over = False
-		input_t = env.observe()
+		#load models
+		model_name = "TTTModel_v{}".format(model_version)
+		opponent_name = "TTTModel_v{}".format(opponent_version)
 		
-		while not game_over:
-			input_tm1 = input_t
-			valid_action = False
-			if np.random.rand() <= epsilon:
-				while not valid_action:
-					action = np.random.randint(0, num_actions, size=1)
-					if input_tm1[0][action] == -1:
-						valid_action = True
-			else:
-				q = model.predict(input_tm1)[0]
-				ql = list()
-				for i in range(0,len(q)):
-					ql.append([i,q[i]])
-				ql = sorted(ql,reverse=True,key=lambda tuz: tuz[1])
-				tmp_idx = 0;
-				while not valid_action:
-					action = ql[tmp_idx][0]
-					if input_tm1[0][action] == -1:
-						valid_action = True
-					else:
-						tmp_idx = tmp_idx + 1
+		if os.path.isfile("{}.h5".format(model_name)):
+			model.load_weights("{}.h5".format(model_name))
+		else:
+			model.load_weights("{}.h5".format(opponent_name))
+		
+		opponent.load_weights("{}.h5".format(opponent_name))
+		
+		env = TTT()
+		exp_rep = ExpRep(max_memory=max_memory)
+		win_cnt = 0
+		draw_cnt = 0
+		lose_cnt = 0
+		
+		for e in range(epoch):
+			loss = 0.
+			env.reset()
+			game_over = False
+			input_t = env.observe()
 			
-			#make a move
-			input_t, reward, game_over = env.act(action, opponent)
-			if reward == 1:
-				win_cnt += 1
-			elif reward == -1:
-				draw_cnt += 1
-			elif reward == -2:
-				lose_cnt += 1
+			while not game_over:
+				input_tm1 = input_t
+				valid_action = False
+				if np.random.rand() <= epsilon:
+					while not valid_action:
+						action = np.random.randint(0, num_actions, size=1)
+						if input_tm1[0][action] == -1:
+							valid_action = True
+				else:
+					q = model.predict(input_tm1)[0]
+					ql = list()
+					for i in range(0,len(q)):
+						ql.append([i,q[i]])
+					ql = sorted(ql,reverse=True,key=lambda tuz: tuz[1])
+					tmp_idx = 0;
+					while not valid_action:
+						action = ql[tmp_idx][0]
+						if input_tm1[0][action] == -1:
+							valid_action = True
+						else:
+							tmp_idx = tmp_idx + 1
 				
-			#remember
-			exp_rep.remember([input_tm1, action, reward, input_t], game_over)
-			
-			#get batch of previous experiences for training
-			inputs, targets = exp_rep.get_batch(model, batch_size=batch_size)
-			
-			#train neural network on previous experiences
-			loss += model.train_on_batch(inputs, targets)
-			
-		if (e+1) % 100 == 0:
-			print("{:04d}/{:04d} |{:03d}|{:03d}|{:03d}| {:.6f}".format(e+1,epoch,win_cnt,draw_cnt,lose_cnt,loss))
-			
-		#tuz = env.observe()[0]
-		#print("{:02d}|{:02d}|{:02d}".format(int(tuz[0]),int(tuz[1]),int(tuz[2])))
-		#print("{:02d}|{:02d}|{:02d}".format(int(tuz[3]),int(tuz[4]),int(tuz[5])))
-		#print("{:02d}|{:02d}|{:02d}".format(int(tuz[6]),int(tuz[7]),int(tuz[8])))
-		#print("")
-			
-	
-	#save model
-	model.save_weights("TTTModel_v4.h5", overwrite=True)
-	with open("TTTModel_v4.json", "w") as outfile:
-		json.dump(model.to_json(), outfile)
+				#make a move
+				input_t, reward, game_over = env.act(action, opponent)
+				if reward == 1:
+					win_cnt += 1
+				elif reward == -1:
+					draw_cnt += 1
+				elif reward == -2:
+					lose_cnt += 1
+					
+				#remember
+				exp_rep.remember([input_tm1, action, reward, input_t], game_over)
+				
+				#get batch of previous experiences for training
+				inputs, targets = exp_rep.get_batch(model, batch_size=batch_size)
+				
+				#train neural network on previous experiences
+				loss += model.train_on_batch(inputs, targets)
+				
+			if (e+1) % 1000 == 0:
+				print("{:03d} |{:03d}|{:03d}|{:03d}| {:.6f} | {:03d}vs{:03d}".format(cnt,win_cnt,draw_cnt,lose_cnt,loss,opponent_version,model_version))
+				
+			#tuz = env.observe()[0]
+			#print("{:02d}|{:02d}|{:02d}".format(int(tuz[0]),int(tuz[1]),int(tuz[2])))
+			#print("{:02d}|{:02d}|{:02d}".format(int(tuz[3]),int(tuz[4]),int(tuz[5])))
+			#print("{:02d}|{:02d}|{:02d}".format(int(tuz[6]),int(tuz[7]),int(tuz[8])))
+			#print("")
+				
+		cnt = cnt + 1
+		win_rate = 0.0 + float(win_cnt)/float(epoch)
+		#save model
+		model.save_weights("{}.h5".format(model_name), overwrite=True)
+		with open("{}.json".format(model_name), "w") as outfile:
+			json.dump(model.to_json(), outfile)
