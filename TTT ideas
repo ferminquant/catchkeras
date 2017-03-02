@@ -13,10 +13,3 @@ Seria de ponerla a jugar contra ella misma. Primero contra una NN no entrenada, 
 345
 678
 
-				q = model.predict(input_tm1)[0]
-				while not valid_action:
-					action = np.argmax(q)
-					if input_tm1[action] == -1:
-						valid_action = True
-					else:
-						del q[action]
