@@ -116,7 +116,7 @@ if __name__ == "__main__":
 	epoch = 1000
 	max_memory = 500
 	batch_size = 50
-	hidden_size = 90
+	hidden_size = 900
 		
 	opponent_version = 0
 	found_last_version = False
@@ -127,7 +127,10 @@ if __name__ == "__main__":
 		else:
 			found_last_version= True
 			if opponent_version <= 1:
-				opponent_version = opponent_version - 1
+				if opponent_version == 0:
+					opponent_version = 0
+				else:
+					opponent_version = opponent_version - 1
 			else:
 				#in case the last version is not complete
 				opponent_version = opponent_version - 2
