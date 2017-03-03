@@ -63,6 +63,6 @@ if __name__ == "__main__":
 			state[0][my_action()] = 0
 			print_board(state[0])
 			
-			state[0][model_action()] = 1
+			state[0][model_action(state)] = 1
 			print_board(state[0])
 			
