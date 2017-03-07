@@ -238,7 +238,7 @@ if __name__ == "__main__":
 				loss += model.train_on_batch(inputs, targets)
 				
 			if (e+1) % epoch == 0:
-				print("{:03d} | {:03d}|{:03d}|{:03d} | {.6f} | {:03d}vs{:03d}".format(cnt,win_cnt,draw_cnt,lose_cnt,opponent_version,loss,model_version))
+				print("{:03d} | {:03d}|{:03d}|{:03d} | {:.6f} | {:03d}vs{:03d}".format(cnt,win_cnt,draw_cnt,lose_cnt,opponent_version,loss,model_version))
 				
 			#tuz = env.observe()[0]
 			#print("{:02d}|{:02d}|{:02d}".format(int(tuz[0]),int(tuz[1]),int(tuz[2])))
