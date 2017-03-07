@@ -17,14 +17,17 @@ class TTT(object):
 		return self.state[np.newaxis]
 	
 	def act(self,action,opponent):
+		win_value = 1
+		draw_value = -1
+		lose_value = -2
 		self.state[action] = 1
 		not_a_draw, game_over = self._is_over()
 		if not_a_draw:
 			#I won
-			return self.observe(), 1, game_over
+			return self.observe(), win_value, game_over
 		elif game_over:
 			#it was a draw
-			return self.observe(), -1, game_over
+			return self.observe(), draw_value, game_over
 		else:
 			#I did not win, and it is the opponent's turn
 			valid_action = False
@@ -44,10 +47,10 @@ class TTT(object):
 			not_a_draw, game_over = self._is_over()
 			if not_a_draw:
 				#I lost
-				return self.observe(), -2, game_over
+				return self.observe(), lose_value, game_over
 			elif game_over:
 				#it was a draw
-				return self.observe(), -1, game_over
+				return self.observe(), draw_value, game_over
 			else:
 				#the game continues
 				return self.observe(), 0, game_over
@@ -100,7 +103,8 @@ class ExpRep(object):
 			game_over = self.memory[idx][1]
 			inputs[i:i+1] = state_t
 			targets[i] = model.predict(state_t)[0]
-			Q_sa = np.max(model.predict(state_tp1)[0])
+			#Q_sa = np.max(model.predict(state_tp1)[0])
+			Q_sa = model.predict(state_tp1)[0][action_t]
 			if game_over:
 				targets[i, action_t] = reward_t
 			else:
@@ -114,12 +118,13 @@ if __name__ == "__main__":
 	epsilon = 0.1
 	num_actions = 9
 	epoch = 1000
-	max_memory = 500
-	batch_size = 50
-	hidden_size = 900
+	max_memory = 1000
+	batch_size = 100
+	hidden_size = 100
 		
 	opponent_version = 0
 	found_last_version = False
+	first_run_ever = False
 	while not found_last_version:
 		opponent_name = "TTTModel_v{}".format(opponent_version)
 		if os.path.isfile("{}.h5".format(opponent_name)):
@@ -129,6 +134,7 @@ if __name__ == "__main__":
 			if opponent_version <= 1:
 				if opponent_version == 0:
 					opponent_version = 0
+					first_run_ever = True
 				else:
 					opponent_version = opponent_version - 1
 			else:
@@ -140,17 +146,22 @@ if __name__ == "__main__":
 	model = Sequential()
 	model.add(Dense(hidden_size, input_shape=(num_actions,), activation='relu'))
 	model.add(Dense(hidden_size, activation='relu'))
+	model.add(Dense(hidden_size, activation='relu'))
+	model.add(Dense(hidden_size, activation='relu'))
 	model.add(Dense(num_actions))
 	model.compile(sgd(lr=.2), "mse")
 	
-	#save v0 model, run only first time ever, it is suppossed to be a new untrained model
-	#model.save_weights("TTTModel_v0.h5", overwrite=True)
-	#with open("TTTModel_v0.json", "w") as outfile:
-	#	json.dump(model.to_json(), outfile)
+	if first_run_ever:
+		#save v0 model, run only first time ever, it is suppossed to be a new untrained model
+		model.save_weights("TTTModel_v0.h5", overwrite=True)
+		with open("TTTModel_v0.json", "w") as outfile:
+			json.dump(model.to_json(), outfile)
 	
 	#opponent model
 	opponent = Sequential()
 	opponent.add(Dense(hidden_size, input_shape=(num_actions,), activation='relu'))
+	opponent.add(Dense(hidden_size, activation='relu'))
+	opponent.add(Dense(hidden_size, activation='relu'))
 	opponent.add(Dense(hidden_size, activation='relu'))
 	opponent.add(Dense(num_actions))
 	opponent.compile(sgd(lr=.2), "mse")
@@ -226,8 +237,8 @@ if __name__ == "__main__":
 				#train neural network on previous experiences
 				loss += model.train_on_batch(inputs, targets)
 				
-			if (e+1) % 1000 == 0:
-				print("{:03d} |{:03d}|{:03d}|{:03d}| {:.6f} | {:03d}vs{:03d}".format(cnt,win_cnt,draw_cnt,lose_cnt,loss,opponent_version,model_version))
+			if (e+1) % epoch == 0:
+				print("{:03d} | {:03d}|{:03d}|{:03d} | {.6f} | {:03d}vs{:03d}".format(cnt,win_cnt,draw_cnt,lose_cnt,opponent_version,loss,model_version))
 				
 			#tuz = env.observe()[0]
 			#print("{:02d}|{:02d}|{:02d}".format(int(tuz[0]),int(tuz[1]),int(tuz[2])))
