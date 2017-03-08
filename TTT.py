@@ -31,7 +31,13 @@ class TTT(object):
 		else:
 			#I did not win, and it is the opponent's turn
 			valid_action = False
-			q = opponent.predict(self.observe())[0]
+			backstate = self.observe()
+			for j in range(len(backstate)):
+				if backstate[0][j] == 0:
+					backstate[0][j] = 1
+				elif backstate[0][j] == 1:
+					backstate[0][j] = 0
+			q = opponent.predict(backstate)[0]
 			ql = list()
 			for i in range(0,len(q)):
 				ql.append([i,q[i]])
@@ -131,7 +137,7 @@ class ExpRep(object):
 		return self.memory
 
 if __name__ == "__main__":
-	epsilon = 0.2
+	epsilon = 0.1
 	num_actions = 9
 	epoch = 1000
 	max_memory = 500
@@ -184,7 +190,8 @@ if __name__ == "__main__":
 	win_rate = 0.0
 	cnt = 1
 	while True:#model_version <= 2:
-		if win_rate >= 0.8:
+		epsilon = 1.0-(win_rate/2)
+		if win_rate >= 0.9:
 			opponent_version = opponent_version + 1
 			model_version = opponent_version + 1
 	

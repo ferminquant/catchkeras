@@ -2,6 +2,7 @@ import json
 import numpy as np
 import time
 import os.path
+import copy
 from keras.models import model_from_json
 from TTT import TTT
 
@@ -15,6 +16,14 @@ def my_action():
 	return raw_input("Please enter your move: ")
 
 def model_action(state):
+	backstate = copy.deepcopy(state)
+	for j in range(len(backstate)):
+		if backstate[0][j] == 0:
+			backstate[0][j] = 1
+		elif backstate[0][j] == 1:
+			backstate[0][j] = 0
+	state = copy.deepcopy(backstate)
+
 	q = model.predict(state)[0]
 	ql = list()
 	for i in range(0,len(q)):
