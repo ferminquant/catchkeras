@@ -261,7 +261,7 @@ if __name__ == "__main__":
 			
 			loss_avg.append(loss)
 			if (e+1) % epoch == 0:
-				print("{:03d} | {:03d}|{:03d}|{:03d} | {:.6f} | {:03d}vs{:03d}".format(cnt,win_cnt,draw_cnt,lose_cnt,sum(loss_avg)/epoch,opponent_version,model_version))
+				print("{:03d} | {:03d}|{:03d}|{:03d} | {:.20f} | {:03d}vs{:03d}".format(cnt,win_cnt,draw_cnt,lose_cnt,sum(loss_avg)/epoch,opponent_version,model_version))
 				
 			#tuz = env.observe()[0]
 			#print("{:02d}|{:02d}|{:02d}".format(int(tuz[0]),int(tuz[1]),int(tuz[2])))
